@@ -7,6 +7,7 @@ Aplicação desktop para totens de autoatendimento, com modo kiosk (tela cheia),
 - Tela de configuração (URL do sistema e impressora)
 - Impressão de teste
 - Modo kiosk em tela cheia
+- Impressão automática de senhas via bridge com o Filaflow web
 - Pressione `ESC` para voltar à tela de configuração
 
 ## Estrutura do projeto
@@ -16,8 +17,9 @@ filaflow-totem/
 ├── totem/                  # Pacote da aplicação
 │   ├── app.py              # Janela principal
 │   ├── config_screen.py    # Tela de configuração
-│   ├── kiosk_screen.py     # Tela kiosk (WebEngine)
-│   ├── printing.py         # Impressão (Windows/Linux)
+│   ├── kiosk_screen.py     # Tela kiosk (WebEngine + QWebChannel)
+│   ├── bridge.py           # Ponte JS ↔ Python para impressão
+│   ├── printing.py         # Impressão térmica (Windows/Linux)
 │   └── paths.py            # Caminhos (dev e executável)
 ├── scripts/
 │   ├── build.sh            # Build Linux/macOS
@@ -83,6 +85,17 @@ pyinstaller --clean --noconfirm totem.spec
 1. Copie a pasta `dist/FilaflowTotem/` (ou `FilaflowTotem.app` no macOS) para o totem.
 2. Execute o binário. Na primeira execução, configure URL e impressora.
 3. O arquivo `config.json` é criado **ao lado do executável** e persiste entre reinícios.
+
+## Integração com Filaflow
+
+O app expõe `window.totemBridge` via QWebChannel para a página `/totem` do Filaflow. Quando o paciente escolhe um serviço:
+
+1. O Filaflow emite a senha no servidor
+2. A página chama `totemBridge.printTicket(...)` automaticamente
+3. O desktop imprime na impressora configurada em `config.json` (layout térmico 58/80mm)
+4. A tela volta ao início após alguns segundos
+
+Configure a URL do totem apontando para `https://seu-dominio/totem`.
 
 ## Notas
 

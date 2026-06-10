@@ -14,6 +14,8 @@ hiddenimports = pkg_hiddenimports
 if sys.platform == "win32":
     hiddenimports += ["win32print", "win32api", "pywintypes"]
 
+hiddenimports += ["PyQt6.QtWebChannel"]
+
 a = Analysis(
     ["totem/__main__.py"],
     pathex=[],
