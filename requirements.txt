@@ -1,0 +1,4 @@
+PyQt6>=6.6.0
+PyQt6-WebEngine>=6.6.0
+pywin32>=306; sys_platform == "win32"
+pycups>=2.0.1; sys_platform == "linux"

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.spec.bak
+.venv/
+venv/
+env/
+
+# App runtime
+config.json
+teste_impressao.txt
+test_print.txt
+
+# PyInstaller
+*.manifest
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filaflow-totem"
+version = "1.0.0"
+description = "Aplicação de totem desktop com modo kiosk e impressão local"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "PyQt6>=6.6.0",
+    "PyQt6-WebEngine>=6.6.0",
+]
+
+[project.optional-dependencies]
+windows = ["pywin32>=306"]
+linux = ["pycups>=2.0.1"]
+build = ["pyinstaller>=6.3.0"]
+
+[project.scripts]
+filaflow-totem = "totem.app:run"
+
+[tool.setuptools.packages.find]
+include = ["totem*"]
