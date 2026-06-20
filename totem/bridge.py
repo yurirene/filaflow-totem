@@ -2,7 +2,7 @@ import json
 
 from PyQt6.QtCore import QObject, pyqtSlot
 
-from totem.config_store import get_printer_name
+from totem.config_store import get_paper_width_mm, get_printer_name
 from totem.paths import get_app_dir
 from totem.printing import print_ticket
 
@@ -16,7 +16,7 @@ class TotemBridge(QObject):
             if not printer:
                 print("TotemBridge: impressora não configurada")
                 return False
-            print_ticket(printer, data, get_app_dir())
+            print_ticket(printer, data, get_app_dir(), get_paper_width_mm())
             return True
         except Exception as exc:
             print(f"TotemBridge: erro ao imprimir senha: {exc}")

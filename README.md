@@ -4,7 +4,7 @@ Aplicação desktop para totens de autoatendimento, com modo kiosk (tela cheia),
 
 ## Funcionalidades
 
-- Tela de configuração (URL do sistema e impressora)
+- Tela de configuração (URL do sistema, impressora e largura da bobina 58/80 mm)
 - Impressão de teste
 - Modo kiosk em tela cheia
 - Impressão automática de senhas via bridge com o Filaflow web
@@ -83,7 +83,7 @@ pyinstaller --clean --noconfirm totem.spec
 ## Deploy
 
 1. Copie a pasta `dist/FilaflowTotem/` (ou `FilaflowTotem.app` no macOS) para o totem.
-2. Execute o binário. Na primeira execução, configure URL e impressora.
+2. Execute o binário. Na primeira execução, configure URL, impressora e largura da bobina (58 ou 80 mm).
 3. O arquivo `config.json` é criado **ao lado do executável** e persiste entre reinícios.
 
 ## Integração com Filaflow
