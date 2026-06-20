@@ -4,6 +4,13 @@ import sys
 import tempfile
 from typing import Optional
 
+from totem.escpos_encoding import (
+    PRINTER_ENCODING,
+    encode_printer_text,
+    escpos_select_codepage,
+    sanitize_text,
+)
+
 IS_WINDOWS = sys.platform == "win32"
 
 # Largura útil em caracteres (fonte padrão ESC/POS)
@@ -69,31 +76,24 @@ def _big_codigo_lines(codigo: str, width: int) -> list[str]:
     if not codigo:
         return []
 
+    spaced = " ".join(list(codigo))
     border = "=" * width
-    inner_width = max(len(codigo) + 4, min(width - 4, len(codigo) + 8))
-    padded = codigo.center(inner_width)
 
-    lines = [
-        "",
-        border,
-        "",
-        padded,
-        "",
-        padded,
-        "",
-        border,
-        "",
-    ]
+    lines = ["", border, ""]
+    for _ in range(3):
+        lines.append(_center(spaced, width))
+        lines.append("")
+    lines.extend([border, ""])
     return lines
 
 
 def format_thermal_ticket(data: dict, paper_mm: Optional[int] = None) -> str:
     width = get_char_width(paper_mm)
-    clinica = data.get("clinica", "")
-    codigo = data.get("codigo", "")
-    servico = data.get("servico", "")
-    badge = data.get("badge", "")
-    data_hora = data.get("data", "")
+    clinica = sanitize_text(data.get("clinica", ""))
+    codigo = sanitize_text(data.get("codigo", ""))
+    servico = sanitize_text(data.get("servico", ""))
+    badge = sanitize_text(data.get("badge", ""))
+    data_hora = sanitize_text(data.get("data", ""))
     espera = data.get("espera", 0)
     posicao = data.get("posicao", 1)
 
@@ -116,7 +116,7 @@ def format_thermal_ticket(data: dict, paper_mm: Optional[int] = None) -> str:
         lines.append("")
 
     lines.append(_center(f"Espera: ~{espera} min", width))
-    lines.append(_center(f"Posicao: {posicao}", width))
+    lines.append(_center(f"Posição: {posicao}", width))
     lines.append("")
     lines.extend(_wrap("Aguarde ser chamado no painel", width))
     lines.append("")
@@ -126,7 +126,7 @@ def format_thermal_ticket(data: dict, paper_mm: Optional[int] = None) -> str:
 
 
 def _escpos_init() -> bytes:
-    return b"\x1b\x40"
+    return b"\x1b\x40" + escpos_select_codepage()
 
 
 def _escpos_align(mode: int) -> bytes:
@@ -156,22 +156,32 @@ def _escpos_cut() -> bytes:
 
 
 def _escpos_text(text: str) -> bytes:
-    return text.encode("utf-8", errors="replace")
+    return encode_printer_text(text)
+
+
+def _escpos_codigo_block(codigo: str, width_mul: int, height_mul: int, repeats: int = 2) -> bytes:
+    parts: list[bytes] = [_escpos_text("\n")]
+    for _ in range(repeats):
+        parts.append(_escpos_gs_size(width_mul, height_mul))
+        parts.append(_escpos_text(codigo + "\n\n"))
+    parts.append(_escpos_gs_size(1, 1))
+    return b"".join(parts)
 
 
 def build_escpos_ticket(data: dict, paper_mm: Optional[int] = None) -> bytes:
     width = get_char_width(paper_mm)
     paper = normalize_paper_width(paper_mm)
-    clinica = data.get("clinica", "")
-    codigo = str(data.get("codigo", "")).strip().upper()
-    servico = data.get("servico", "")
-    badge = data.get("badge", "")
-    data_hora = data.get("data", "")
+    clinica = sanitize_text(data.get("clinica", ""))
+    codigo = sanitize_text(str(data.get("codigo", ""))).strip().upper()
+    servico = sanitize_text(data.get("servico", ""))
+    badge = sanitize_text(data.get("badge", ""))
+    data_hora = sanitize_text(data.get("data", ""))
     espera = data.get("espera", 0)
     posicao = data.get("posicao", 1)
 
-    # 80mm: senha extra grande (3x). 58mm: 2x para caber na bobina.
-    codigo_w, codigo_h = (3, 3) if paper == 80 else (2, 2)
+    # 80mm: 4x — 58mm: 3x (máximo que cabe confortavelmente na bobina)
+    codigo_w, codigo_h = (4, 4) if paper == 80 else (3, 3)
+    codigo_repeats = 3 if paper == 80 else 2
 
     parts: list[bytes] = [_escpos_init(), _escpos_align(1)]
 
@@ -187,19 +197,14 @@ def build_escpos_ticket(data: dict, paper_mm: Optional[int] = None) -> bytes:
         parts.append(_escpos_size(double_width=True) + _escpos_text(badge + "\n"))
         parts.append(_escpos_size() + _escpos_text("\n"))
 
-    parts.append(_escpos_text("\n"))
-    parts.append(_escpos_gs_size(codigo_w, codigo_h) + _escpos_text(codigo + "\n"))
-    parts.append(_escpos_text("\n"))
-    parts.append(_escpos_gs_size(codigo_w, codigo_h) + _escpos_text(codigo + "\n"))
-    parts.append(_escpos_text("\n"))
-    parts.append(_escpos_size() + _escpos_gs_size(1, 1))
+    parts.append(_escpos_codigo_block(codigo, codigo_w, codigo_h, codigo_repeats))
 
     if servico:
         parts.append(_escpos_size(double_width=True) + _escpos_text(servico + "\n"))
         parts.append(_escpos_size() + _escpos_text("\n"))
 
     parts.append(_escpos_text(f"Espera: ~{espera} min\n"))
-    parts.append(_escpos_text(f"Posicao: {posicao}\n\n"))
+    parts.append(_escpos_text(f"Posição: {posicao}\n\n"))
     for line in _wrap("Aguarde ser chamado no painel", width):
         parts.append(_escpos_text(line + "\n"))
     parts.append(_escpos_text("\n" + "=" * width + "\n\n"))
@@ -257,7 +262,7 @@ def print_ticket(
 
 def print_test_file(printer_name: str, content: str, work_dir: str) -> None:
     test_file = os.path.join(work_dir, "teste_impressao.txt")
-    with open(test_file, "w", encoding="utf-8") as f:
+    with open(test_file, "w", encoding=PRINTER_ENCODING, errors="replace") as f:
         f.write(content)
 
     if IS_WINDOWS:
@@ -273,7 +278,7 @@ def print_test_file(printer_name: str, content: str, work_dir: str) -> None:
 
 def sample_ticket_data() -> dict:
     return {
-        "clinica": "Clinica Filaflow",
+        "clinica": "Clínica Filaflow",
         "codigo": "T001",
         "servico": "Triagem",
         "badge": "Atendimento Normal",

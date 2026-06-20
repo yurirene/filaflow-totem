@@ -25,3 +25,7 @@ class TotemBridge(QObject):
     @pyqtSlot(result=bool)
     def isAvailable(self) -> bool:
         return get_printer_name() is not None
+
+    @pyqtSlot(result=int)
+    def getPaperWidthMm(self) -> int:
+        return get_paper_width_mm()

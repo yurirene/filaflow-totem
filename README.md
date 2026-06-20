@@ -99,6 +99,7 @@ Configure a URL do totem apontando para `https://seu-dominio/totem`.
 
 ## Notas
 
+- Impressão ESC/POS em **CP1252** (WPC1252) com acentuação portuguesa correta
 - Impressão no Linux usa CUPS (`pycups`).
 - Impressão no Windows usa `pywin32`.
 - No macOS, instale `pycups` manualmente se precisar testar impressão local.
