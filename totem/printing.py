@@ -194,13 +194,17 @@ def build_escpos_ticket(data: dict, paper_mm: Optional[int] = None) -> bytes:
     parts.append(_escpos_text("=" * width + "\n\n"))
 
     if badge:
-        parts.append(_escpos_size(double_width=True) + _escpos_text(badge + "\n"))
+        badge_width = max(1, width // 2)
+        for line in _wrap(badge, badge_width):
+            parts.append(_escpos_size(double_width=True) + _escpos_text(line + "\n"))
         parts.append(_escpos_size() + _escpos_text("\n"))
 
     parts.append(_escpos_codigo_block(codigo, codigo_w, codigo_h, codigo_repeats))
 
     if servico:
-        parts.append(_escpos_size(double_width=True) + _escpos_text(servico + "\n"))
+        servico_width = max(1, width // 2)
+        for line in _wrap(servico, servico_width):
+            parts.append(_escpos_size(double_width=True) + _escpos_text(line + "\n"))
         parts.append(_escpos_size() + _escpos_text("\n"))
 
     parts.append(_escpos_text(f"Espera: ~{espera} min\n"))

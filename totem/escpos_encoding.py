@@ -29,7 +29,11 @@ def escpos_select_codepage() -> bytes:
 
 def encode_printer_text(text: str) -> bytes:
     """Codifica texto no charset da impressora térmica."""
-    sanitized = sanitize_text(text)
+    if not text:
+        return b""
+
+    # Preserva quebras de linha explícitas (sanitize_text colapsa whitespace).
+    sanitized = "\n".join(sanitize_text(line) for line in text.split("\n"))
     try:
         return sanitized.encode(PRINTER_ENCODING)
     except UnicodeEncodeError:
